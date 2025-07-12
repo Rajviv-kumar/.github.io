@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rock Paper Scissors Ultimate</title>
+  <style>
+    :root {
+      --primary-color: #007bff;
+      --background-light: #f0f0f0;
+      --background-dark: #121212;
+      --text-light: #ffffff;
+      --text-dark: #000000;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      transition: background 0.3s, color 0.3s;
+      background: var(--background-light);
+      color: var(--text-dark);
+    }
+
+    body.dark {
+      background: var(--background-dark);
+      color: var(--text-light);
+    }
+
+    h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    .game-setup input, .game-setup select, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 1rem;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    button.choice {
+      font-size: 20px;
+      padding: 15px 25px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary-color);
+      color: white;
+      cursor: pointer;
+    }
+
+    .theme-toggle, .restart, .music-toggle {
+      margin-top: 10px;
+      background: #444;
+    }
+
+    .info {
+      margin-top: 20px;
+    }
+
+    #confetti {
+      font-size: 3rem;
+      animation: pop 0.5s ease;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.5); }
+      100% { transform: scale(1); }
+    }
+
+    @media (max-width: 600px) {
+      .buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Rock Paper Scissors Ultimate</h1>
+
+  <div class="game-setup">
+    <input type="text" id="playerName" placeholder="Enter your name" />
+    <select id="mode">
+      <option value="3">Best of 3</option>
+      <option value="5">Best of 5</option>
+    </select>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div class="buttons" id="gameButtons" style="display:none">
+    <button class="choice" onclick="playGame('rock')">🪨 Rock</button>
+    <button class="choice" onclick="playGame('paper')">📄 Paper</button>
+    <button class="choice" onclick="playGame('scissors')">✂️ Scissors</button>
+  </div>
+
+  <div class="info" id="status"></div>
+  <div class="info" id="score"></div>
+  <div class="info" id="leaderboard"></div>
+  <div id="confetti"></div>
+
+  <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+  <button class="music-toggle" onclick="toggleMusic()">🎵 Toggle Music</button>
+  <button class="restart" onclick="resetGame()">🔄 Restart</button>
+
+  <audio id="bg-music" loop>
+    <source src="https://www.bensound.com/bensound-music/bensound-creativeminds.mp3" type="audio/mp3">
+  </audio>
+<script>
+  let playerName = "You";
+  let playerScore = 0;
+  let computerScore = 0;
+  let roundCount = 0;
+  let totalRounds = 3;
+
+  let playerWins = parseInt(localStorage.getItem('playerWins')) || 0;
+  let computerWins = parseInt(localStorage.getItem('computerWins')) || 0;
+
+  function startGame() {
+    const inputName = document.getElementById("playerName").value.trim();
+    playerName = inputName || "You";
+    totalRounds = parseInt(document.getElementById("mode").value);
+    playerScore = 0;
+    computerScore = 0;
+    roundCount = 0;
+
+    document.getElementById("status").innerText = "";
+    document.getElementById("score").innerText = `${playerName}: 0 | Computer: 0`;
+    document.getElementById("gameButtons").style.display = "flex";
+    updateLeaderboard();
+  }
+
+  function playGame(playerChoice) {
+    const choices = ["rock", "paper", "scissors"];
+    const computerChoice = choices[Math.floor(Math.random() * 3)];
+    let result = "";
+
+    if (playerChoice === computerChoice) result = "tie";
+    else if (
+      (playerChoice === "rock" && computerChoice === "scissors") ||
+      (playerChoice === "scissors" && computerChoice === "paper") ||
+      (playerChoice === "paper" && computerChoice === "rock")
+    ) {
+      result = "win";
+      playerScore++;
+    } else {
+      result = "lose";
+      computerScore++;
+    }
+
+    roundCount++;
+    document.getElementById("status").innerHTML = `${playerName} chose <b>${playerChoice}</b>, Computer chose <b>${computerChoice}</b>.<br>Result: <strong>${result.toUpperCase()}</strong>`;
+    document.getElementById("score").innerText = `${playerName}: ${playerScore} | Computer: ${computerScore}`;
+
+    if (playerScore > totalRounds / 2 || computerScore > totalRounds / 2) {
+      const winner = playerScore > computerScore ? playerName : "Computer";
+      if (winner === playerName) playerWins++;
+      else computerWins++;
+
+      localStorage.setItem("playerWins", playerWins);
+      localStorage.setItem("computerWins", computerWins);
+
+      showConfetti(winner);
+      updateLeaderboard();
+    }
+  }
+
+  function resetGame() {
+    localStorage.clear();
+    playerWins = 0;
+    computerWins = 0;
+    document.getElementById("leaderboard").innerHTML = "";
+    document.getElementById("gameButtons").style.display = "none";
+    document.getElementById("score").innerText = "";
+    document.getElementById("status").innerText = "";
+    document.getElementById("confetti").innerHTML = "";
+  }
+
+  function updateLeaderboard() {
+    document.getElementById("leaderboard").innerHTML =
+      `🏆 Match Wins - ${playerName}: ${playerWins} | Computer: ${computerWins}`;
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+    const isDark = document.body.classList.contains("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }
+
+  function toggleMusic() {
+    const music = document.getElementById("bg-music");
+    if (music.paused) {
+      music.play();
+    } else {
+      music.pause();
+    }
+  }
+
+  function showConfetti(winner) {
+    const confetti = document.getElementById("confetti");
+    confetti.innerText = winner === playerName ? "🎉 You Won the Match!" : "💻 Computer Wins!";
+    setTimeout(() => { confetti.innerText = ""; }, 3000);
+  }
+
+  // Load theme from localStorage
+  window.onload = () => {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+    updateLeaderboard();
+  };
+</script>
+</body>
+</html>
